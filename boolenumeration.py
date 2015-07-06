@@ -89,6 +89,6 @@ class BooleanEnumerationTester:
           max_value = min_value
         else:
           min_value = max_value 
-      print("End of round. mV: %s MV: %s" % (min_value, max_value))
-    print("End of search, mV: %s MV: %s" % (min_value, max_value))
+#      print("End of round. mV: %s MV: %s" % (min_value, max_value))
+#    print("End of search, mV: %s MV: %s" % (min_value, max_value))
     return min_value
