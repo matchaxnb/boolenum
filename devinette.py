@@ -10,6 +10,7 @@ import string
 import random
 from boolenumeration import *
 from time import sleep
+from threading import Thread
 
 class Devinette:
   def __init__(self, length = 30):
@@ -69,16 +70,16 @@ to test
 
 class DevinetteMB(BooltesterMessageBuilder):
   def build_gt(self, coordinates, value):
-    return ('gt', coordinates, value)
+    return ('gt', coordinates[0], value)
 
   def build_lt(self, coordinates, value):
-    return ('lt', coordinates, value)
+    return ('lt', coordinates[0], value)
 
   def build_ge(self, coordinates, value):
-    return ('ge', coordinates, value)
+    return ('ge', coordinates[0], value)
 
   def build_le(self, coordinates, value):
-    return ('le', coordinates, value)
+    return ('le', coordinates[0], value)
 
 """
 This sends the messages we want to get to the Devinette and returns 
@@ -121,21 +122,22 @@ class DevinetteBoolTester(BooleanEnumerationTester):
 
 if __name__ == '__main__':
   print("****")
+  print("Testing the linear, mono version")
   print("Loading devinette")
   d = Devinette(10)
 
   bt = DevinetteBoolTester(DevinetteConnector(d), DevinetteTruthTester(), DevinetteMB())
 
   # first guess length
+  lengthpb = BooleanEnumerationProblem(("len",))
 
-  lengthpb = BooleanEnumerationProblem("len")
 
   total_length = bt.solve_problem(lengthpb)
 
   i = 0
   resstr = ""
   while i < total_length:
-    problem = BooleanEnumerationProblem(i)
+    problem = BooleanEnumerationProblem((i,))
     guess = bt.solve_problem(problem)
     print("Guess is ", guess)
     resstr += chr(guess)
@@ -143,3 +145,27 @@ if __name__ == '__main__':
 
   print("Found str %s of length %s" % (resstr, total_length))
   print("Original is", d._val)
+
+  print("Testing the generators w/ multithreading")
+  d = Devinette(100)
+  dc = DevinetteConnector(d)
+  dtt = DevinetteTruthTester()
+  dmb = DevinetteMB()
+  bt = DevinetteBoolTester(dc, dtt, dmb)
+  bg = BooleanEnumerationGenerators(dc, dmb)
+
+  lengthpb = BooleanEnumerationProblem(("len",))
+
+  total_length = bt.solve_problem(lengthpb)
+  ts = []
+  res_holder = []
+  for i in bg.gen_solvers(bt, bg.gen_problems((), total_length), res_holder):
+    t = Thread(target=i[0])
+    ts.append(t)
+    t.start()
+  [th.join() for th in ts]
+  srt = sorted(res_holder, key=lambda x: x[0])
+  a = ""
+  for i in srt:
+    a += chr(i[1])
+  print(a)

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 """
 abstraction of a boolean enumeration problem. such problems are meant to get a
 single character's value in a blind system such as a blind SQLi injection.
@@ -92,3 +91,32 @@ class BooleanEnumerationTester:
 #      print("End of round. mV: %s MV: %s" % (min_value, max_value))
 #    print("End of search, mV: %s MV: %s" % (min_value, max_value))
     return min_value
+
+"""
+Different generators we use to produce BooleanEnumerationProblems that, when
+put together, dump whole strings of data.
+"""
+class BooleanEnumerationGenerators:
+  def __init__(self, connector, messagebuilder):
+    self.connector = connector
+    self.messagebuilder = messagebuilder
+
+  """ given base coordinates without length, adds the length as last parameter
+  and yields the Problem so it can be fed to a tester
+  """
+  def gen_problems(self, basepath, length):
+    while (length > 0):
+      length -= 1
+      coords = basepath + (length,)
+      c = BooleanEnumerationProblem(coords)
+      yield c
+
+  """ given a tester and iterable problems, yields a solver along each of the
+  exposed problems"""
+  def gen_solvers(self, tester, problems, res_holder = []):
+    for i in problems:
+      def _solve():
+        coord = i.coordinates
+        value = tester.solve_problem(i)
+        res_holder.append((coord, value))
+      yield (_solve, i)
